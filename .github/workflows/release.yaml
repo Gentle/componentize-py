@@ -71,6 +71,10 @@ jobs:
           key: cpython-wasi
           enableCrossOsArchive: true
 
+      - name: Install python dependencies
+        shell: bash
+        run: sudo apt-get install zlib1g-dev
+
       - name: Build
         shell: bash
         run: cargo build --release
