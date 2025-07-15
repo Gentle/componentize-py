@@ -53,7 +53,7 @@ fn stubs_for_clippy(out_dir: &Path) -> Result<()> {
 
     let files = [
         "libcomponentize_py_runtime.so.zst",
-        "libpython3.12.so.zst",
+        "libpython3.13.so.zst",
         "libc.so.zst",
         "libwasi-emulated-mman.so.zst",
         "libwasi-emulated-process-clocks.so.zst",
@@ -150,7 +150,7 @@ fn package_all_the_things(out_dir: &Path) -> Result<()> {
                 .arg(&path)
                 .arg("-Wl,--no-whole-archive")
                 .arg(format!("-L{}", cpython_wasi_dir.to_str().unwrap()))
-                .arg("-lpython3.12"))?;
+                .arg("-lpython3.13"))?;
 
             compress(out_dir, name, out_dir, false)?;
         } else {
@@ -179,9 +179,9 @@ fn package_all_the_things(out_dir: &Path) -> Result<()> {
         )?;
     }
 
-    compress(&cpython_wasi_dir, "libpython3.12.so", out_dir, true)?;
+    compress(&cpython_wasi_dir, "libpython3.13.so", out_dir, true)?;
 
-    let path = repo_dir.join("cpython/builddir/wasi/install/lib/python3.12");
+    let path = repo_dir.join("cpython/builddir/wasi/install/lib/python3.13");
 
     if path.exists() {
         let mut builder = Builder::new(Encoder::new(
@@ -267,8 +267,8 @@ fn add(builder: &mut Builder<impl Write>, root: &Path, path: &Path) -> Result<()
 
 fn maybe_make_cpython(repo_dir: &Path, wasi_sdk: &Path) -> Result<()> {
     let cpython_wasi_dir = repo_dir.join("cpython/builddir/wasi");
-    if !cpython_wasi_dir.join("libpython3.12.so").exists() {
-        if !cpython_wasi_dir.join("libpython3.12.a").exists() {
+    if !cpython_wasi_dir.join("libpython3.13.so").exists() {
+        if !cpython_wasi_dir.join("libpython3.13.a").exists() {
             let cpython_native_dir = repo_dir.join("cpython/builddir/build");
             if !cpython_native_dir.join(PYTHON_EXECUTABLE).exists() {
                 fs::create_dir_all(&cpython_native_dir)?;
@@ -313,9 +313,9 @@ fn maybe_make_cpython(repo_dir: &Path, wasi_sdk: &Path) -> Result<()> {
         run(Command::new(wasi_sdk.join("bin/clang"))
             .arg("-shared")
             .arg("-o")
-            .arg(cpython_wasi_dir.join("libpython3.12.so"))
+            .arg(cpython_wasi_dir.join("libpython3.13.so"))
             .arg("-Wl,--whole-archive")
-            .arg(cpython_wasi_dir.join("libpython3.12.a"))
+            .arg(cpython_wasi_dir.join("libpython3.13.a"))
             .arg("-Wl,--no-whole-archive")
             .arg(cpython_wasi_dir.join("Modules/_hacl/libHacl_Hash_SHA2.a"))
             .arg(cpython_wasi_dir.join("Modules/_decimal/libmpdec/libmpdec.a"))

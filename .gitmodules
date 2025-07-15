@@ -1,3 +1,4 @@
 [submodule "cpython"]
         path = cpython
-        url = https://github.com/dicej/cpython
+	url = https://github.com/Gentle/cpython.git
+	branch = v3.13.5-wasi
