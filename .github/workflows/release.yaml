@@ -205,6 +205,8 @@ jobs:
 
       - name: Build wheels
         uses: PyO3/maturin-action@v1
+        env:
+         MACOSX_DEPLOYMENT_TARGET: "10.15"
         with:
           target: ${{ matrix.config.maturin_target }}
           args: --release --out dist --features pyo3

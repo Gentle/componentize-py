@@ -53,7 +53,7 @@ fn stubs_for_clippy(out_dir: &Path) -> Result<()> {
 
     let files = [
         "libcomponentize_py_runtime.so.zst",
-        "libpython3.12.so.zst",
+        "libpython3.14.so.zst",
         "libc.so.zst",
         "libwasi-emulated-mman.so.zst",
         "libwasi-emulated-process-clocks.so.zst",
@@ -150,7 +150,7 @@ fn package_all_the_things(out_dir: &Path) -> Result<()> {
                 .arg(&path)
                 .arg("-Wl,--no-whole-archive")
                 .arg(format!("-L{}", cpython_wasi_dir.to_str().unwrap()))
-                .arg("-lpython3.12"))?;
+                .arg("-lpython3.14"))?;
 
             compress(out_dir, name, out_dir, false)?;
         } else {
@@ -179,9 +179,9 @@ fn package_all_the_things(out_dir: &Path) -> Result<()> {
         )?;
     }
 
-    compress(&cpython_wasi_dir, "libpython3.12.so", out_dir, true)?;
+    compress(&cpython_wasi_dir, "libpython3.14.so", out_dir, true)?;
 
-    let path = repo_dir.join("cpython/builddir/wasi/install/lib/python3.12");
+    let path = repo_dir.join("cpython/builddir/wasi/install/lib/python3.14");
 
     if path.exists() {
         let mut builder = Builder::new(Encoder::new(
@@ -267,8 +267,8 @@ fn add(builder: &mut Builder<impl Write>, root: &Path, path: &Path) -> Result<()
 
 fn maybe_make_cpython(repo_dir: &Path, wasi_sdk: &Path) -> Result<()> {
     let cpython_wasi_dir = repo_dir.join("cpython/builddir/wasi");
-    if !cpython_wasi_dir.join("libpython3.12.so").exists() {
-        if !cpython_wasi_dir.join("libpython3.12.a").exists() {
+    if !cpython_wasi_dir.join("libpython3.14.so").exists() {
+        if !cpython_wasi_dir.join("libpython3.14.a").exists() {
             let cpython_native_dir = repo_dir.join("cpython/builddir/build");
             if !cpython_native_dir.join(PYTHON_EXECUTABLE).exists() {
                 fs::create_dir_all(&cpython_native_dir)?;
@@ -288,7 +288,10 @@ fn maybe_make_cpython(repo_dir: &Path, wasi_sdk: &Path) -> Result<()> {
                 run(Command::new("../../config.guess").current_dir(&cpython_wasi_dir))?;
 
             run(Command::new("../../Tools/wasm/wasi-env")
-                .env("CONFIG_SITE", "../../Tools/wasm/config.site-wasm32-wasi")
+                .env(
+                    "CONFIG_SITE",
+                    "../../Tools/wasm/wasi/config.site-wasm32-wasi",
+                )
                 .env("CFLAGS", "-fPIC")
                 .current_dir(&cpython_wasi_dir)
                 .args([
@@ -305,6 +308,20 @@ fn maybe_make_cpython(repo_dir: &Path, wasi_sdk: &Path) -> Result<()> {
                     "--enable-ipv6",
                 ]))?;
 
+            // FIXME: the wasi build somehow has no build-details.json
+            let missing_file = cpython_wasi_dir
+                .join("build")
+                .join("lib.wasi-wasm32-3.14")
+                .join("build-details.json");
+            if let Some(parent) = missing_file.parent() {
+                fs::create_dir_all(parent)?;
+            }
+            fs::OpenOptions::new()
+                .read(true)
+                .create(true)
+                .append(true)
+                .open(&missing_file)?;
+
             run(Command::new("make")
                 .current_dir(&cpython_wasi_dir)
                 .arg("install"))?;
@@ -313,12 +330,17 @@ fn maybe_make_cpython(repo_dir: &Path, wasi_sdk: &Path) -> Result<()> {
         run(Command::new(wasi_sdk.join("bin/clang"))
             .arg("-shared")
             .arg("-o")
-            .arg(cpython_wasi_dir.join("libpython3.12.so"))
+            .arg(cpython_wasi_dir.join("libpython3.14.so"))
             .arg("-Wl,--whole-archive")
-            .arg(cpython_wasi_dir.join("libpython3.12.a"))
+            .arg(cpython_wasi_dir.join("libpython3.14.a"))
             .arg("-Wl,--no-whole-archive")
-            .arg(cpython_wasi_dir.join("Modules/_hacl/libHacl_Hash_SHA2.a"))
             .arg(cpython_wasi_dir.join("Modules/_decimal/libmpdec/libmpdec.a"))
+            .arg(cpython_wasi_dir.join("Modules/_hacl/libHacl_HMAC.a"))
+            .arg(cpython_wasi_dir.join("Modules/_hacl/libHacl_Hash_BLAKE2.a"))
+            .arg(cpython_wasi_dir.join("Modules/_hacl/libHacl_Hash_MD5.a"))
+            .arg(cpython_wasi_dir.join("Modules/_hacl/libHacl_Hash_SHA1.a"))
+            .arg(cpython_wasi_dir.join("Modules/_hacl/libHacl_Hash_SHA2.a"))
+            .arg(cpython_wasi_dir.join("Modules/_hacl/libHacl_Hash_SHA3.a"))
             .arg(cpython_wasi_dir.join("Modules/expat/libexpat.a")))?;
     }
 
